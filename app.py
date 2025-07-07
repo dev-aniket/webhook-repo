@@ -1,13 +1,16 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from pymongo import MongoClient
 from datetime import datetime
-from flask_cors import CORS
+import os
 
 app = Flask(__name__)
-CORS(app)
 
-# Connect to MongoDB
-client = MongoClient("mongodb+srv://aniketweb:Aniket123@webhookcluster.nikld5z.mongodb.net/")
+
+CORS(app, resources={r"/*": {"origins": "https://ui-components-ruddy.vercel.app"}})
+
+
+client = MongoClient(os.environ.get("MONGO_URI"))
 db = client.github_webhook
 collection = db.actions
 
