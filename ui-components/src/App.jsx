@@ -5,7 +5,7 @@ function App() {
 
   const fetchActions = async () => {
     try {
-      const res = await fetch("https://flask-webhook-765w.onrender.com/actions");
+      const res = await fetch("https://webhook-repo-d8y0.onrender.com/actions");
       const data = await res.json();
       setActions(data);
     } catch (error) {
