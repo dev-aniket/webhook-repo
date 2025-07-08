@@ -21,13 +21,25 @@ def github_webhook():
         return jsonify({"message": "Webhook is up"}), 200
 
     data = request.json
-    try:
-        action_type = data["action"]
-        author = data["author"]
-        from_branch = data.get("from_branch", "")
-        to_branch = data["to_branch"]
-        timestamp = datetime.utcnow().strftime("%d %B %Y - %I:%M %p UTC")
+    event = request.headers.get("X-GitHub-Event", "ping")
 
+    try:
+        if event == "push":
+            action_type = "PUSH"
+            author = data["pusher"]["name"]
+            from_branch = ""
+            to_branch = data["ref"].split("/")[-1]
+
+        elif event == "pull_request":
+            action_type = "PULL_REQUEST"
+            author = data["pull_request"]["user"]["login"]
+            from_branch = data["pull_request"]["head"]["ref"]
+            to_branch = data["pull_request"]["base"]["ref"]
+
+        else:
+            return jsonify({"message": "Unhandled event type"}), 200
+
+        timestamp = datetime.utcnow().strftime("%d %B %Y - %I:%M %p UTC")
         entry = {
             "author": author,
             "action": action_type,
