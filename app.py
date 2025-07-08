@@ -5,15 +5,20 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})  # allow all for now
+
+
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 
 MONGO_URI = os.environ.get("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client.github_webhook
 collection = db.actions
+
 
 @app.route("/webhook", methods=["GET", "POST", "HEAD"])
 def github_webhook():
@@ -21,25 +26,13 @@ def github_webhook():
         return jsonify({"message": "Webhook is up"}), 200
 
     data = request.json
-    event = request.headers.get("X-GitHub-Event", "ping")
-
     try:
-        if event == "push":
-            action_type = "PUSH"
-            author = data["pusher"]["name"]
-            from_branch = ""
-            to_branch = data["ref"].split("/")[-1]
-
-        elif event == "pull_request":
-            action_type = "PULL_REQUEST"
-            author = data["pull_request"]["user"]["login"]
-            from_branch = data["pull_request"]["head"]["ref"]
-            to_branch = data["pull_request"]["base"]["ref"]
-
-        else:
-            return jsonify({"message": "Unhandled event type"}), 200
-
+        action_type = data["action"]
+        author = data["author"]
+        from_branch = data.get("from_branch", "")
+        to_branch = data["to_branch"]
         timestamp = datetime.utcnow().strftime("%d %B %Y - %I:%M %p UTC")
+
         entry = {
             "author": author,
             "action": action_type,
@@ -54,5 +47,23 @@ def github_webhook():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+@app.route("/actions", methods=["GET"])
+def get_actions():
+    try:
+        docs = collection.find().sort("_id", -1).limit(10)
+        result = []
+        for doc in docs:
+            result.append({
+                "author": doc.get("author", ""),
+                "action": doc.get("action", ""),
+                "from_branch": doc.get("from_branch", ""),
+                "to_branch": doc.get("to_branch", ""),
+                "timestamp": doc.get("timestamp", "")
+            })
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Run app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
