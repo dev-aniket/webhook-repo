@@ -1,45 +1,46 @@
 import React, { useEffect, useState } from "react";
 
-const App = () => {
+function App() {
   const [actions, setActions] = useState([]);
 
-  const fetchData = async () => {
+  const fetchActions = async () => {
     try {
       const res = await fetch("https://flask-webhook-765w.onrender.com/actions");
       const data = await res.json();
       setActions(data);
     } catch (error) {
-      console.error("Failed to fetch:", error);
+      console.error("Error fetching actions:", error);
     }
   };
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 15000);
+    fetchActions();
+    const interval = setInterval(fetchActions, 15000);
     return () => clearInterval(interval);
   }, []);
 
-  const renderMessage = (action) => {
-    const { author, from_branch, to_branch, timestamp, action: type } = action;
-
-    if (type === "PUSH") return `${author} pushed to ${to_branch} on ${timestamp}`;
-    if (type === "PULL_REQUEST")
-      return `${author} submitted a pull request from ${from_branch} to ${to_branch} on ${timestamp}`;
-    if (type === "MERGE")
-      return `${author} merged branch ${from_branch} to ${to_branch} on ${timestamp}`;
+  const renderText = (action) => {
+    if (action.action === "PUSH")
+      return `${action.author} pushed to ${action.to_branch} on ${action.timestamp}`;
+    if (action.action === "PULL_REQUEST")
+      return `${action.author} submitted a pull request from ${action.from_branch} to ${action.to_branch} on ${action.timestamp}`;
+    if (action.action === "MERGE")
+      return `${action.author} merged branch ${action.from_branch} to ${action.to_branch} on ${action.timestamp}`;
     return "";
   };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h2>GitHub Webhook Feed</h2>
-      <ul>
-        {actions.map((action, idx) => (
-          <li key={idx}>{renderMessage(action)}</li>
-        ))}
-      </ul>
+    <div className="flex items-center justify-center h-screen bg-gray-100">
+      <div className="bg-white p-6 rounded-lg shadow-md w-[90%] md:w-[600px]">
+        <h2 className="text-2xl font-bold mb-4 text-center">GitHub Webhook Feed</h2>
+        <ul className="space-y-2">
+          {actions.map((a, i) => (
+            <li key={i} className="text-gray-700">{renderText(a)}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
-};
+}
 
 export default App;
